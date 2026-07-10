@@ -30,8 +30,10 @@
       radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.35), transparent 60%),
       radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.08), transparent 55%),
       var(--wall);
+    background-attachment:fixed;
+    background-color:var(--wall);
     min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden;
-    transition:background 1s;
+    transition:background-color 1s;
   }
   body.night{
     --wall:#272a33; --sign-white:#efece2; --ink:#e9e6db; --muted:#a7a294; --line:#4a4d58;
@@ -50,7 +52,11 @@
       radial-gradient(rgba(255,255,255,.4) 1px, transparent 1.5px);
     background-size:7px 9px, 11px 13px;background-position:0 0,3px 5px;
   }
-  .app{width:min(460px,100%);padding:0 16px calc(30px + env(safe-area-inset-bottom));position:relative}
+  /* weather-reactive wash, pinned to viewport, very subtle */
+  .tint{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity 1.2s, background 1.2s;
+    mix-blend-mode:multiply}
+  .tint.on{opacity:1}
+  .app{width:min(460px,100%);padding:0 16px calc(30px + env(safe-area-inset-bottom));position:relative;z-index:2}
 
   /* ---------- top bar ---------- */
   .bar{display:flex;gap:8px;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 2px 4px;position:relative;z-index:5}
@@ -202,6 +208,16 @@
   .day .tt{font-family:'Oswald',sans-serif;font-size:14.5px;letter-spacing:.04em;white-space:nowrap}
   .day .tt .lo{color:var(--muted);margin-right:8px}
 
+  .share{
+    all:unset;cursor:pointer;display:block;width:100%;margin-top:15px;text-align:center;
+    background:var(--accent);color:#fff;font-family:'Oswald',sans-serif;font-weight:700;
+    font-size:14px;letter-spacing:.12em;padding:12px 0;border-radius:3px;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,.22),0 3px 6px rgba(0,0,0,.18);transition:transform .1s,filter .15s;
+  }
+  .share:active{transform:translateY(2px);box-shadow:inset 0 -1px 0 rgba(0,0,0,.22)}
+  .share:focus-visible{outline:2px solid var(--sign-black);outline-offset:3px}
+  .share.done{filter:saturate(.7)}
+
   /* ---------- states & footer ---------- */
   .status{
     margin-top:16px;text-align:center;font-family:'Oswald',sans-serif;font-size:14px;
@@ -222,6 +238,7 @@
 </style>
 </head>
 <body>
+<div class="tint" id="tint" aria-hidden="true"></div>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
@@ -269,6 +286,7 @@
         <div class="vital"><div class="k">Sunset</div><div class="v" id="set">--</div></div>
         <div class="vital"><div class="k">Pressure</div><div class="v" id="pres">--</div></div>
       </div>
+      <button class="share" id="share">◔ SHARE THE STONE'S VERDICT</button>
     </div>
   </section>
 
@@ -389,6 +407,21 @@
 
     document.body.classList.toggle('night', cur.is_day===0);
 
+    // subtle weather wash + matching phone status-bar colour
+    const TINT = {
+      sunny:['radial-gradient(120% 80% at 50% -10%, rgba(255,214,120,.5), transparent 60%)','#f0e2c2'],
+      dry:  ['radial-gradient(120% 80% at 50% -10%, rgba(210,205,190,.4), transparent 60%)','#e5ddc8'],
+      wet:  ['radial-gradient(120% 90% at 50% 0%, rgba(120,150,180,.55), transparent 65%)','#c3cdd6'],
+      snowy:['radial-gradient(120% 90% at 50% 0%, rgba(220,230,240,.6), transparent 70%)','#dde4ec'],
+      foggy:['radial-gradient(120% 90% at 50% 30%, rgba(200,200,200,.6), transparent 70%)','#d7d5cf'],
+      storm:['radial-gradient(120% 90% at 50% 0%, rgba(70,80,105,.6), transparent 65%)','#8f96a5']
+    };
+    const tw = TINT[kind] || TINT.dry;
+    const tint = $('tint');
+    tint.style.background = tw[0]; tint.classList.add('on');
+    const tc = document.querySelector('meta[name=theme-color]');
+    if(tc) tc.setAttribute('content', cur.is_day===0 ? '#272a33' : tw[1]);
+
     $('place').textContent = loc.name;
     $('stamp').textContent = (loc.admin?loc.admin+" · ":"") + "OBSERVED " +
       new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
@@ -481,6 +514,7 @@
           b.innerHTML = p.name + ' <span class="sub">' + [p.admin1,p.country].filter(Boolean).join(', ') + '</span>';
           b.onclick=()=>{
             loc={lat:p.latitude,lon:p.longitude,name:p.name,admin:[p.admin1,p.country_code].filter(Boolean).join(', ')};
+            saveLoc();
             results.classList.remove('open'); q.value=''; q.blur();
             fetchWeather();
           };
@@ -493,31 +527,47 @@
   document.addEventListener('click', e=>{ if(!e.target.closest('.bar')) results.classList.remove('open'); });
 
   // ---------- geolocation ----------
-  $('locate').addEventListener('click', ()=>{
-    if(!navigator.geolocation){ setStatus('Location not available on this device.', true); return; }
-    setStatus('Finding you…');
+  function saveLoc(){ try{ localStorage.setItem('stone.loc', JSON.stringify(loc)); }catch(e){} }
+
+  function locateMe(silent){
+    if(!navigator.geolocation){ if(!silent) setStatus('Location not available on this device.', true); return; }
+    if(!silent) setStatus('Finding you…');
     navigator.geolocation.getCurrentPosition(async pos=>{
       loc.lat=pos.coords.latitude; loc.lon=pos.coords.longitude;
       loc.name='My location'; loc.admin='';
-      // reverse-name it (best effort)
       try{
         const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&latitude='+loc.lat+'&longitude='+loc.lon);
         const j=await r.json();
         if(j.results&&j.results[0]){ loc.name=j.results[0].name; loc.admin=[j.results[0].admin1,j.results[0].country_code].filter(Boolean).join(', '); }
       }catch(e){}
-      fetchWeather();
-    }, ()=> setStatus('Location denied. Search for your town instead.', true),
+      saveLoc(); fetchWeather();
+    }, ()=>{ if(!silent) setStatus('Location denied. Search for your town instead.', true); },
     {timeout:10000, maximumAge:300000});
-  });
+  }
+  $('locate').addEventListener('click', ()=> locateMe(false));
 
   // ---------- units ----------
   const unitBtn=$('unit');
   unitBtn.addEventListener('click', ()=>{
     unitF=!unitF; unitBtn.textContent = unitF?'°F':'°C';
+    try{ localStorage.setItem('stone.unit', unitF?'F':'C'); }catch(e){}
     if(lastData) render(lastData);
   });
   // default to °F for US locales
   try{ if(/(US|LR|MM)/.test(Intl.DateTimeFormat().resolvedOptions().locale.split('-')[1]||'')){ unitF=true; unitBtn.textContent='°F'; } }catch(e){}
+
+  // share the stone's verdict
+  $('share').addEventListener('click', async ()=>{
+    if(!lastData) return;
+    const [label,emoji,verdict] = codeInfo(lastData.current.weather_code);
+    const t = cT(lastData.current.temperature_2m);
+    const txt = emoji+' '+loc.name+': '+t+'°'+(unitF?'F':'C')+', '+label+'. '+verdict+'\n— per The Stone 🪨';
+    const url = location.origin+location.pathname;
+    try{
+      if(navigator.share){ await navigator.share({title:'The Stone says…', text:txt, url}); }
+      else { await navigator.clipboard.writeText(txt+' '+url); const b=$('share'); b.textContent='✓ COPIED — GO PASTE IT'; b.classList.add('done'); setTimeout(()=>{b.textContent="◔ SHARE THE STONE'S VERDICT";b.classList.remove('done');},2200); }
+    }catch(e){}
+  });
 
   // status tap = retry
   statusEl.addEventListener('click', ()=>{ if(statusEl.classList.contains('err')) fetchWeather(); });
@@ -534,7 +584,20 @@
   hang.setAttribute('tabindex','0');
 
   // ---------- boot ----------
+  // 1) restore last-used location if we have one
+  let hadSaved = false;
+  try{
+    const saved = JSON.parse(localStorage.getItem('stone.loc')||'null');
+    if(saved && typeof saved.lat==='number'){ loc = saved; hadSaved = true; }
+    const su = localStorage.getItem('stone.unit');
+    if(su==='F'){ unitF=true; unitBtn.textContent='°F'; }
+    if(su==='C'){ unitF=false; unitBtn.textContent='°C'; }
+  }catch(e){}
+
   fetchWeather();
+  // 2) first-ever visit: try to grab real location right away (silent — no error if denied)
+  if(!hadSaved) locateMe(true);
+
   refreshTimer = setInterval(()=>{ if(document.visibilityState==='visible') fetchWeather(); }, 15*60*1000);
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && lastData) fetchWeather(); });
 })();
