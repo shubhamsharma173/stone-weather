@@ -74,6 +74,12 @@ _(none)_
 
 ## DONE
 
+- **T-000e — iOS Safari background glitch: real fix.**
+  Agent: Claude · 2026-07-11 · Root cause = 6 stacked position:fixed layers Safari
+  couldn't composite mid-scroll. Moved all persistent background onto <html>;
+  removed .bg, body::before, .tint fixed layers. Weather still tints status bar.
+  SW v11. Verified in Chromium + structurally; real iOS confirmation owner-side.
+
 - **T-000d — Real iOS Safari background fix + vertical rhythm.**
   Agent: Claude · 2026-07-11 · Moved base bg color onto <html> (Safari paints
   it in overscroll zones behind fixed layers); body/.bg transparent. Normalized

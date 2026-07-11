@@ -26,51 +26,36 @@
     --muted:#7a7568; --line:#d8d2c2;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  /* iOS Safari reveals the <html> background in overscroll/rubber-band zones,
-     BEHIND any position:fixed layer. So the day/night base color must live on
-     <html> itself; JS keeps it in sync every render (setRootBg). We avoid :has()
-     and putting the base color on a fixed layer — neither covers the overscroll gap. */
-  html{background-color:#e8dfcb;}
+  /* BACKGROUND: painted entirely on <html>, the root element. iOS Safari paints
+     the root reliably across the whole canvas INCLUDING overscroll/rubber-band
+     zones, and it needs no separate compositing layer — so there is nothing to
+     glitch during scroll. We deliberately avoid position:fixed background layers
+     (they caused edge banding that only "corrected" on screenshot repaint).
+     The plaster-dot texture rides along on <html> and scrolls with the page,
+     which reads naturally as a wall. JS updates only the base color for day/night. */
+  html{
+    background-color:#e8dfcb;
+    background-image:
+      radial-gradient(rgba(0,0,0,.05) 1px, transparent 1.5px),
+      radial-gradient(rgba(255,255,255,.35) 1px, transparent 1.5px);
+    background-size:7px 9px, 11px 13px;
+    background-position:0 0, 3px 5px;
+  }
   html,body{height:100%}
   body{
     font-family:'Libre Franklin',system-ui,sans-serif;color:var(--ink);
     background-color:transparent;
     min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden;
   }
-  /* Fixed background layer — iOS-safe alternative to background-attachment:fixed.
-     min-height:100lvh covers the gap iOS exposes when the Safari toolbar collapses. */
-  .bg{
-    position:fixed;left:0;right:0;top:0;bottom:0;z-index:-2;transition:background 1s;
-    background:
-      radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.30), transparent 60%),
-      radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.10), transparent 55%);
-  }
-  body.night .bg{
-    background:
-      radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.05), transparent 60%),
-      radial-gradient(120% 100% at 90% 100%, rgba(0,0,0,.28), transparent 55%);
-  }
   body.night{
     --wall:#272a33; --sign-white:#efece2; --ink:#e9e6db; --muted:#a7a294; --line:#4a4d58;
     color:var(--ink);
   }
-  body.night::before{opacity:.14}
   body.night .search{background:#31343f;border-color:#767283;box-shadow:2px 2px 0 #14161c}
   body.night .sign-body,body.night .plank,body.night .week,body.night .results{background:#31343f}
   body.night .hour.now-h{background:rgba(214,106,92,.14)}
   body.night .stoneword{color:#e08373}
   body.night .range{background:#4a4d58}
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;opacity:.45;z-index:-1;
-    background-image:
-      radial-gradient(rgba(0,0,0,.05) 1px, transparent 1.5px),
-      radial-gradient(rgba(255,255,255,.4) 1px, transparent 1.5px);
-    background-size:7px 9px, 11px 13px;background-position:0 0,3px 5px;
-  }
-  /* weather-reactive wash, pinned to viewport, very subtle */
-  .tint{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity 1.2s, background 1.2s;
-    mix-blend-mode:multiply}
-  .tint.on{opacity:1}
 
   /* ---------- splash screen ---------- */
   .splash{
@@ -352,8 +337,6 @@
 </style>
 </head>
 <body>
-<div class="bg" aria-hidden="true"></div>
-<div class="tint" id="tint" aria-hidden="true"></div>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 
@@ -560,23 +543,23 @@
 
     const isNight = cur.is_day===0;
     document.body.classList.toggle('night', isNight);
-    // keep the root/html background in sync so iOS overscroll & safe areas don't flash the light wall
-    document.documentElement.style.backgroundColor = isNight ? '#272a33' : '#e8dfcb';
+    // Base background lives on <html> (reliable in iOS overscroll; no fixed layer to glitch).
+    // Update the color, and soften the plaster dots at night so they don't speckle on dark.
+    const root = document.documentElement;
+    root.style.backgroundColor = isNight ? '#272a33' : '#e8dfcb';
+    root.style.backgroundImage = isNight
+      ? 'radial-gradient(rgba(255,255,255,.05) 1px, transparent 1.5px), radial-gradient(rgba(0,0,0,.10) 1px, transparent 1.5px)'
+      : 'radial-gradient(rgba(0,0,0,.05) 1px, transparent 1.5px), radial-gradient(rgba(255,255,255,.35) 1px, transparent 1.5px)';
 
-    // subtle weather wash + matching phone status-bar colour
+    // weather-mood colour drives the phone status-bar tint (theme-color meta).
+    // (We intentionally no longer paint a fixed full-screen wash layer — stacked
+    //  position:fixed layers caused iOS scroll compositing glitches / edge banding.)
     const TINT = {
-      sunny:['radial-gradient(120% 80% at 50% -10%, rgba(255,214,120,.5), transparent 60%)','#f0e2c2'],
-      dry:  ['radial-gradient(120% 80% at 50% -10%, rgba(210,205,190,.4), transparent 60%)','#e5ddc8'],
-      wet:  ['radial-gradient(120% 90% at 50% 0%, rgba(120,150,180,.55), transparent 65%)','#c3cdd6'],
-      snowy:['radial-gradient(120% 90% at 50% 0%, rgba(220,230,240,.6), transparent 70%)','#dde4ec'],
-      foggy:['radial-gradient(120% 90% at 50% 30%, rgba(200,200,200,.6), transparent 70%)','#d7d5cf'],
-      storm:['radial-gradient(120% 90% at 50% 0%, rgba(70,80,105,.6), transparent 65%)','#8f96a5']
+      sunny:'#f0e2c2', dry:'#e5ddc8', wet:'#c3cdd6',
+      snowy:'#dde4ec', foggy:'#d7d5cf', storm:'#8f96a5'
     };
-    const tw = TINT[kind] || TINT.dry;
-    const tint = $('tint');
-    tint.style.background = tw[0]; tint.classList.add('on');
     const tc = document.querySelector('meta[name=theme-color]');
-    if(tc) tc.setAttribute('content', isNight ? '#272a33' : tw[1]);
+    if(tc) tc.setAttribute('content', isNight ? '#272a33' : (TINT[kind] || TINT.dry));
 
     $('place').textContent = loc.name;
     document.title = cT(cur.temperature_2m)+'\u00b0 '+loc.name+' \u2014 The Stone';

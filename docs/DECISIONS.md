@@ -222,3 +222,22 @@ Template:
   `<body>` or a fixed layer, and never rely on `var(--wall)` for `<html>`.
   Caveat: verified only in headless Chromium in the dev environment; real
   WebKit/iOS verification is owner-side (WebKit could not be installed).
+
+## ADR-016 — No persistent fixed background layers (background lives on <html>)
+- **Date:** 2026-07-11
+- **By:** Claude
+- **Status:** Accepted; supersedes ADR-015's fixed-layer aspects
+- **Context:** Background banding appeared during scroll on iOS Safari and
+  "corrected" on screenshot — the signature of Safari's fixed-layer repaint
+  bug. The app had six stacked position:fixed full-screen layers, which
+  Safari could not composite reliably mid-scroll.
+- **Decision:** Paint the entire persistent background (base color + plaster
+  texture) on the `<html>` root element; no fixed layer. Remove `.bg`,
+  `body::before`, and `.tint`. Weather mood now only drives the status-bar
+  theme-color, not a fixed wash. `.sky`/`.flash` remain but are empty/
+  transparent except during precipitation/lightning.
+- **Consequences:** Eliminates the scroll compositing glitch at its source.
+  Minor loss: the subtle full-screen weather-color wash is gone (mood is
+  still conveyed by the stone, theme-color, and day/night). RULE: never
+  reintroduce a persistent full-screen position:fixed background layer.
+- **Supersedes:** ADR-015 (fixed-layer parts).

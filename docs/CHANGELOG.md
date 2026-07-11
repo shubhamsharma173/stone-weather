@@ -7,6 +7,7 @@ Format: `- YYYY-MM-DD (commit) — description`
 
 ---
 
+- 2026-07-11 (pending) — Fixed the iOS Safari background glitch for real: the whole page background now paints on the <html> root with NO position:fixed layers, eliminating the edge banding that appeared during scroll and vanished on screenshot. Removed the fixed gradient, texture, and weather-tint layers (weather mood still tints the status bar).
 - 2026-07-11 (pending) — Reworked the page background so iOS Safari no longer shows cream/slate banding at the top and bottom during scroll (base color moved onto the <html> element, which Safari paints edge-to-edge including the overscroll zones). Tightened vertical spacing and aligned the vitals grid so values line up across rows.
 - 2026-07-11 (pending) — Fixed severe-weather alerts: an alert from one city no longer lingers when you switch cities (stale-response guard); the empty red bar when there's no alert is gone; and "tap to expand" now actually reveals the full alert text.
 - 2026-07-11 (pending) — Added a launch splash screen (a stone dropping into place); fixed a 4px horizontal overflow on small phones (iPhone SE); framed the app as a panel on tablet/desktop widths. Added a PR template enforcing the hand-off summary.

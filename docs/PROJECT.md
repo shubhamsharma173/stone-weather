@@ -395,6 +395,25 @@ and easy to reintroduce.
     on tap, and only showing the "tap to expand" affordance when there is
     genuinely more to show.
 
+ 10. **iOS Safari background banding during scroll — the ACTUAL root cause
+     (finally, 2026-07-11).** The banding that appeared while scrolling and
+     "corrected" the instant a screenshot was taken is a classic iOS Safari
+     *fixed-layer compositing bug*: the app had SIX stacked `position:fixed`
+     full-screen layers (`.bg` gradient, `body::before` texture, `.tint`
+     wash, `.splash`, `.sky`, `.flash`). Safari fails to repaint stacked
+     fixed layers reliably mid-scroll, leaving stale/garbage bands at the
+     edges; a screenshot forces a full repaint, hiding it. **Fix:** paint
+     the entire persistent background (base color + plaster-dot texture) on
+     the `<html>` root element, which needs no compositing layer and is
+     painted reliably including overscroll. Removed the `.bg`,
+     `body::before`, and `.tint` fixed layers entirely. Only `.sky`
+     (particles, populated only during precip) and `.flash` (lightning,
+     transparent otherwise) remain fixed, and neither shows a persistent
+     background. **RULE for future agents: never add a persistent
+     full-screen `position:fixed` background layer. Background belongs on
+     `<html>`.** (Prior entries about this bug were partial mis-diagnoses;
+     this is the resolved account.)
+
 **Open / not yet addressed:**
 
 - **No European AQI scale** — only US AQI (`us_aqi`) is fetched.
