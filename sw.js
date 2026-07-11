@@ -1,5 +1,5 @@
 // Bump this string on every deploy to force clients onto fresh code.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const SHELL_CACHE = 'stone-shell-' + VERSION;
 const DATA_CACHE  = 'stone-data-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];

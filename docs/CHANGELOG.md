@@ -7,6 +7,7 @@ Format: `- YYYY-MM-DD (commit) — description`
 
 ---
 
+- 2026-07-11 (pending) — Added a launch splash screen (a stone dropping into place); fixed a 4px horizontal overflow on small phones (iPhone SE); framed the app as a panel on tablet/desktop widths. Added a PR template enforcing the hand-off summary.
 - 2026-07-11 (ad12b9d) — Added full project knowledge base and multi-agent
   governance docs (AGENTS.md, docs/PROJECT.md, DECISIONS.md, TASKS.md,
   CHANGELOG.md). No user-facing app change.

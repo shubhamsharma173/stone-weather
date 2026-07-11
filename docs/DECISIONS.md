@@ -157,3 +157,28 @@ Template:
 - **Consequences:** Stateless agents can pick up work with full context and
   avoid reintroducing past bugs. Cost: a documentation discipline overhead
   on every change (deemed essential, not optional).
+
+## ADR-012 — Launch splash screen
+- **Date:** 2026-07-11
+- **By:** Claude
+- **Status:** Accepted
+- **Context:** On cold start the app showed empty skeletons until data
+  arrived; the owner wanted a branded launch moment.
+- **Decision:** Add a full-screen splash (a stone dropping onto its rope
+  over "THE STONE") that fades out on the first successful render, with a
+  6-second safety timeout and error-path dismissal so it can never trap the
+  user. Reduced-motion disables its animation.
+- **Consequences:** A branded first impression reinforcing the concept.
+  Cost: a brief extra layer on load (negligible; removed from DOM after).
+
+## ADR-013 — Wide-screen panel framing
+- **Date:** 2026-07-11
+- **By:** Claude
+- **Status:** Accepted
+- **Context:** The app is a fixed ~460px phone-first column; on tablet/
+  desktop it floated in empty space, reading as unfinished.
+- **Decision:** At ≥620px, frame the column as a rounded, shadowed panel
+  pinned near the top, so the phone-first layout reads as an intentional
+  design choice rather than a mobile page stretched onto desktop.
+- **Consequences:** Looks deliberate on large screens without a separate
+  desktop layout. Preserves the single-column, one-glance philosophy.

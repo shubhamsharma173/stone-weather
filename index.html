@@ -71,6 +71,58 @@
   .tint{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity 1.2s, background 1.2s;
     mix-blend-mode:multiply}
   .tint.on{opacity:1}
+
+  /* ---------- splash screen ---------- */
+  .splash{
+    position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:8px;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.28), transparent 60%),
+      var(--wall);
+    transition:opacity .6s ease, visibility .6s;
+  }
+  body.night .splash{
+    background:radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.05), transparent 60%), #272a33;
+  }
+  .splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+  .splash-rig{position:relative;height:160px;display:flex;flex-direction:column;align-items:center}
+  .splash-rope{
+    width:3px;height:70px;border-radius:2px;
+    background:repeating-linear-gradient(-35deg,var(--rope) 0 3px,#6b6350 3px 6px);
+    transform-origin:top center;animation:splashSway 2.4s ease-in-out infinite;
+  }
+  .splash-stone{
+    width:88px;height:68px;margin-top:-2px;
+    background:
+      radial-gradient(60% 55% at 32% 28%, #b3aca0, transparent 70%),
+      radial-gradient(80% 80% at 70% 80%, #5e594f, transparent 60%),
+      var(--stone);
+    border-radius:48% 52% 55% 45%/58% 55% 45% 42%;
+    box-shadow:inset -6px -8px 14px rgba(0,0,0,.35),0 10px 14px rgba(0,0,0,.28);
+    position:relative;transform-origin:top center;animation:splashSway 2.4s ease-in-out infinite;
+  }
+  .splash-stone::after{
+    content:"";position:absolute;inset:-2px;border-radius:inherit;
+    background:
+      repeating-linear-gradient(45deg,transparent 0 11px,rgba(30,28,24,.5) 11px 12.5px),
+      repeating-linear-gradient(-45deg,transparent 0 11px,rgba(30,28,24,.5) 11px 12.5px);
+    -webkit-mask:radial-gradient(closest-side,#000 92%,transparent);
+            mask:radial-gradient(closest-side,#000 92%,transparent);
+  }
+  .splash-rig{animation:splashDrop .7s cubic-bezier(.2,.7,.3,1) both}
+  @keyframes splashDrop{from{transform:translateY(-40px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @keyframes splashSway{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-3deg)}}
+  .splash-word{
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:30px;letter-spacing:.14em;
+    color:var(--ink);margin-top:4px;
+  }
+  .splash-sub{
+    font-family:'Libre Franklin',sans-serif;font-size:13px;color:var(--muted);letter-spacing:.04em;font-style:italic;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .splash-rig,.splash-rope,.splash-stone{animation:none !important}
+  }
+
   .app{width:min(460px,100%);padding:0 16px calc(30px + env(safe-area-inset-bottom));position:relative;z-index:2}
 
   /* ---------- top bar ---------- */
@@ -141,13 +193,26 @@
 
   /* ---------- rig + stone ---------- */
   .rig{position:relative;height:118px;margin-top:2px;z-index:3}
-  .bracket{position:absolute;top:0;left:76%;transform:translateX(-50%);width:150px;height:56px}
+  main.app{overflow-x:clip}
+
+  /* On tablets/desktop, frame the phone-width column as an intentional panel */
+  @media (min-width: 620px){
+    body{align-items:flex-start;padding-top:24px}
+    main.app{
+      background:rgba(0,0,0,.02);
+      border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,.16), 0 2px 0 rgba(255,255,255,.4) inset;
+      padding-top:4px;padding-bottom:24px;margin-bottom:24px;
+    }
+    body.night main.app{background:rgba(255,255,255,.03);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  }
+  .bracket{position:absolute;top:0;left:72%;transform:translateX(-50%);width:150px;height:56px}
   .arm{position:absolute;background:var(--iron);border-radius:3px;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 2px 3px rgba(0,0,0,.25)}
   .arm.h{top:0;left:0;right:0;height:9px}
   .arm.l{top:0;left:14px;width:9px;height:52px;transform:rotate(26deg);transform-origin:top center}
   .arm.r{top:0;right:14px;width:9px;height:52px;transform:rotate(-26deg);transform-origin:top center}
-  .hang{position:absolute;top:6px;left:76%;transform-origin:top center;animation:idleSway 6s ease-in-out infinite;cursor:pointer}
+  .hang{position:absolute;top:6px;left:72%;transform-origin:top center;animation:idleSway 6s ease-in-out infinite;cursor:pointer}
   @keyframes idleSway{0%,100%{transform:rotate(1.2deg)}50%{transform:rotate(-1.2deg)}}
   .hang.poke{animation:poke .9s ease-in-out}
   @keyframes poke{0%{transform:rotate(0)}25%{transform:rotate(9deg)}55%{transform:rotate(-7deg)}80%{transform:rotate(3deg)}100%{transform:rotate(0)}}
@@ -289,6 +354,15 @@
 <div class="tint" id="tint" aria-hidden="true"></div>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
+
+<div class="splash" id="splash" role="status" aria-label="Loading The Stone">
+  <div class="splash-rig">
+    <div class="splash-rope"></div>
+    <div class="splash-stone"></div>
+  </div>
+  <div class="splash-word">THE STONE</div>
+  <div class="splash-sub">Consulting the rock&hellip;</div>
+</div>
 
 <main class="app">
   <div class="bar">
@@ -565,7 +639,18 @@
     setStatus('');
     renderChips();
     fetchAlerts(loc.lat, loc.lon);
+    hideSplash();
   }
+
+  // splash dismissal — on first data, or a hard timeout so it never sticks
+  let splashGone = false;
+  function hideSplash(){
+    if(splashGone) return;
+    splashGone = true;
+    const s = document.getElementById('splash');
+    if(s){ s.classList.add('hide'); setTimeout(()=>{ if(s.parentNode) s.parentNode.removeChild(s); }, 700); }
+  }
+  setTimeout(hideSplash, 6000);
 
   // ---------- severe weather alerts (US National Weather Service — free, keyless, CORS) ----------
   const alertBtn = $('alert');
@@ -622,6 +707,7 @@
     }catch(e){
       skeleton(false);
       setStatus('The stone is unreachable — tap here to retry.', true);
+      hideSplash();
     }finally{
       fetching = false;
     }

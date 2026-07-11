@@ -302,6 +302,10 @@ If a future contributor wants to add a library, weigh it against the
 - Dynamic `<title>` (`"24° New York — The Stone"`) and Open Graph tags
   for link previews
 - Keyboard accessibility on the stone tap target and search dropdown
+- Launch splash screen (stone drops into place), auto-dismissed on first data
+  load with a 6s safety timeout; reduced-motion aware
+- Responsive from 375px phones to desktop; on tablet/desktop (≥620px) the
+  phone-width column is framed as an intentional panel
 
 ---
 

@@ -74,6 +74,11 @@ _(none)_
 
 ## DONE
 
+- **T-000b — Splash screen, responsive audit, PR template.**
+  Agent: Claude · 2026-07-11 · Added launch splash; fixed iPhone-SE horizontal
+  overflow (stone repositioned 76%%→72%%, app overflow-x:clip); wide-screen
+  panel framing (≥620px); added .github/PULL_REQUEST_TEMPLATE.md. SW v8.
+
 - **T-000 — Establish multi-agent governance docs.**
   Agent: Claude · 2026-07-11 · Created AGENTS.md, docs/PROJECT.md,
   docs/DECISIONS.md, docs/TASKS.md, docs/CHANGELOG.md. See ADR-011.
