@@ -23,17 +23,26 @@
     --muted:#7a7568; --line:#d8d2c2;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html{background:var(--wall)}
   html,body{height:100%}
   body{
     font-family:'Libre Franklin',system-ui,sans-serif;color:var(--ink);
-    background:
-      radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.35), transparent 60%),
-      radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.08), transparent 55%),
-      var(--wall);
-    background-attachment:fixed;
-    background-color:var(--wall);
+    background:transparent;
     min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden;
-    transition:background-color 1s;
+  }
+  /* Fixed background layer — iOS-safe alternative to background-attachment:fixed */
+  .bg{
+    position:fixed;inset:0;z-index:-2;transition:background 1s;
+    background:
+      radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.30), transparent 60%),
+      radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.10), transparent 55%),
+      var(--wall);
+  }
+  body.night .bg{
+    background:
+      radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.05), transparent 60%),
+      radial-gradient(120% 100% at 90% 100%, rgba(0,0,0,.28), transparent 55%),
+      var(--wall);
   }
   body.night{
     --wall:#272a33; --sign-white:#efece2; --ink:#e9e6db; --muted:#a7a294; --line:#4a4d58;
@@ -46,7 +55,7 @@
   body.night .stoneword{color:#e08373}
   body.night .range{background:#4a4d58}
   body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;opacity:.45;
+    content:"";position:fixed;inset:0;pointer-events:none;opacity:.45;z-index:-1;
     background-image:
       radial-gradient(rgba(0,0,0,.05) 1px, transparent 1.5px),
       radial-gradient(rgba(255,255,255,.4) 1px, transparent 1.5px);
@@ -238,6 +247,7 @@
 </style>
 </head>
 <body>
+<div class="bg" aria-hidden="true"></div>
 <div class="tint" id="tint" aria-hidden="true"></div>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
@@ -437,7 +447,7 @@
     const tfmt = iso => new Date(iso).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}).replace(' ','');
     $('rise').textContent = daily.sunrise ? tfmt(daily.sunrise[0]) : '--';
     $('set').textContent = daily.sunset ? tfmt(daily.sunset[0]) : '--';
-    $('pres').textContent = cur.surface_pressure ? Math.round(cur.surface_pressure) : '--';
+    $('pres').textContent = cur.pressure_msl ? Math.round(cur.pressure_msl) : '--';
 
     // hourly: next 24 from now
     const nowIdx = hourly.time.findIndex(t => new Date(t) >= new Date());
@@ -482,7 +492,7 @@
       const u = new URL('https://api.open-meteo.com/v1/forecast');
       u.search = new URLSearchParams({
         latitude:loc.lat, longitude:loc.lon, timezone:'auto',
-        current:'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day,surface_pressure',
+        current:'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day,pressure_msl',
         hourly:'temperature_2m,weather_code,precipitation_probability',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset',
         forecast_days:7
@@ -529,17 +539,26 @@
   // ---------- geolocation ----------
   function saveLoc(){ try{ localStorage.setItem('stone.loc', JSON.stringify(loc)); }catch(e){} }
 
+  // Reverse-geocode coordinates → city name. Open-Meteo's geocoder is forward-only,
+  // so we use BigDataCloud's free, no-key, CORS-enabled client endpoint.
+  async function reverseName(lat, lon){
+    try{
+      const r = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en&latitude='+lat+'&longitude='+lon);
+      const j = await r.json();
+      const name = j.city || j.locality || j.principalSubdivision || j.countryName || 'My location';
+      const admin = [j.principalSubdivision, j.countryCode].filter(Boolean).join(', ');
+      return {name, admin};
+    }catch(e){ return {name:'My location', admin:''}; }
+  }
+
   function locateMe(silent){
     if(!navigator.geolocation){ if(!silent) setStatus('Location not available on this device.', true); return; }
     if(!silent) setStatus('Finding you…');
     navigator.geolocation.getCurrentPosition(async pos=>{
       loc.lat=pos.coords.latitude; loc.lon=pos.coords.longitude;
       loc.name='My location'; loc.admin='';
-      try{
-        const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&latitude='+loc.lat+'&longitude='+loc.lon);
-        const j=await r.json();
-        if(j.results&&j.results[0]){ loc.name=j.results[0].name; loc.admin=[j.results[0].admin1,j.results[0].country_code].filter(Boolean).join(', '); }
-      }catch(e){}
+      const nm = await reverseName(loc.lat, loc.lon);
+      loc.name = nm.name; loc.admin = nm.admin;
       saveLoc(); fetchWeather();
     }, ()=>{ if(!silent) setStatus('Location denied. Search for your town instead.', true); },
     {timeout:10000, maximumAge:300000});
@@ -597,6 +616,15 @@
   fetchWeather();
   // 2) first-ever visit: try to grab real location right away (silent — no error if denied)
   if(!hadSaved) locateMe(true);
+  // 2b) returning user whose saved spot is still the generic label: resolve its real name once
+  else if(loc.name === 'My location' && typeof loc.lat === 'number'){
+    reverseName(loc.lat, loc.lon).then(nm=>{
+      if(nm.name && nm.name !== 'My location'){
+        loc.name = nm.name; loc.admin = nm.admin; saveLoc();
+        if(lastData) render(lastData);
+      }
+    });
+  }
 
   refreshTimer = setInterval(()=>{ if(document.visibilityState==='visible') fetchWeather(); }, 15*60*1000);
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && lastData) fetchWeather(); });
