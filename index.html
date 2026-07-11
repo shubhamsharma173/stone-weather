@@ -944,5 +944,32 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ── Visitor identification: Fingerprint Pro ────────────────────────────────
+     Uses the fingerprint.com Pro agent. The key below is a PUBLIC browser key —
+     public keys are meant to be embedded in client-side code and are visible in
+     page source; lock it to your allowed domains in the Fingerprint dashboard.
+     Returns a highly accurate, stable visitorId plus higher-confidence signals
+     from Fingerprint's servers. Best-effort: wrapped in try/catch so it never
+     breaks the weather app if the network/CDN is unreachable/offline.
+     NOTE: default region is US. If your workspace is EU/Asia, pass
+     { region: 'eu' } or { region: 'ap' } to load(). -->
+<script type="module">
+  import * as FingerprintJS from 'https://fpjscdn.net/v3/Cqw5K5AP6TVqArTI2KxB';
+  (async () => {
+    try {
+      const fp = await FingerprintJS.load();
+      const result = await fp.get();
+      const visitorId = result.visitorId;
+      window.stoneVisitorId = visitorId;
+      window.stoneVisitor = result;
+      try { localStorage.setItem('stone.visitorId', visitorId); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('stone:visitor', { detail: result }));
+      console.info('[stone] visitorId:', visitorId);
+    } catch (e) {
+      console.warn('[stone] fingerprint unavailable:', e);
+    }
+  })();
+</script>
 </body>
 </html>
