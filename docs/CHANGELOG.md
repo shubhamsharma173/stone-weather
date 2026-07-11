@@ -1,0 +1,32 @@
+# Changelog
+
+User-visible changes, newest first. One line per change. Every task that
+alters what a user sees or experiences must add an entry here (AGENTS.md §4).
+
+Format: `- YYYY-MM-DD (commit) — description`
+
+---
+
+- 2026-07-11 (ad12b9d) — Added full project knowledge base and multi-agent
+  governance docs (AGENTS.md, docs/PROJECT.md, DECISIONS.md, TASKS.md,
+  CHANGELOG.md). No user-facing app change.
+- 2026-07-11 (bc1a8e1) — Multi-city saved places with a chip row; US severe
+  weather alerts banner; refresh now triggers on the stone only (not the
+  rope); clearer "as the stone sees it" wording.
+- 2026-07-11 (031868c) — Fixed hourly forecast being shifted by timezone for
+  other cities; fixed light band at screen bottom; wind arrow renders
+  correctly on iOS; share links now carry the shared location; keyboard
+  accessibility, reduced-motion support, richer link previews.
+- 2026-07-11 (db7ca01) — Fixed background bleed on iOS; observed time now
+  shows the location's local time; added air quality, visibility, wind
+  gusts, dew point, wind direction; extended to a 10-day forecast.
+- 2026-07-10 (19aa479) — Fixed the iOS background seam; GPS now resolves to a
+  real city name; switched to sea-level pressure.
+- 2026-07-10 (d10b21f) — Fixed stale-cache bug so updates reach installed
+  users; repaired a broken service-worker registration.
+- 2026-07-10 (ee93e0c) — Location and unit now persist across sessions;
+  auto-locate on first launch; weather-reactive background tint; share
+  button; dynamic status-bar color.
+- 2026-07-10 (444fe0c) — Initial release: live weather via Open-Meteo with
+  the reactive stone UI, hourly and daily forecast, city search, PWA
+  install support.
