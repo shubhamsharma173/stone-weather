@@ -8,7 +8,10 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:title" content="The Stone — The Honest Weather App">
+<meta property="og:description" content="A rock on a rope, now with satellite data. Real forecasts, delivered with the confidence only a stone can muster.">
+<meta property="og:type" content="website">
 <meta name="apple-mobile-web-app-title" content="Stone">
 <meta name="description" content="Weather forecasting the way it was meant to be: a rock on a rope, now with satellite data.">
 <title>Stone — The Honest Weather App</title>
@@ -24,15 +27,18 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html{background:var(--wall)}
+  /* CSS-level night sync for html (JS also sets it inline as a fallback for older Safari) */
+  html:has(body.night){background:#272a33}
   html,body{height:100%}
   body{
     font-family:'Libre Franklin',system-ui,sans-serif;color:var(--ink);
-    background:transparent;
+    background-color:var(--wall);
     min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden;
   }
-  /* Fixed background layer — iOS-safe alternative to background-attachment:fixed */
+  /* Fixed background layer — iOS-safe alternative to background-attachment:fixed.
+     min-height:100lvh covers the gap iOS exposes when the Safari toolbar collapses. */
   .bg{
-    position:fixed;inset:0;z-index:-2;transition:background 1s;
+    position:fixed;left:0;right:0;top:0;height:100vh;min-height:100lvh;z-index:-2;transition:background 1s;
     background:
       radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.30), transparent 60%),
       radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.10), transparent 55%),
@@ -183,7 +189,7 @@
   .hilo b{color:var(--ink);font-weight:700}
 
   .vitals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;margin-top:16px;padding-top:14px;border-top:1.5px solid var(--line)}
-  .vital{text-align:center}
+  .vital{text-align:center;display:flex;flex-direction:column;justify-content:flex-end}
   .vital .k{font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
   .vital .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;margin-top:2px;white-space:nowrap}
 
@@ -291,7 +297,7 @@
         <div class="vital"><div class="k">Wind</div><div class="v" id="wind">--</div></div>
         <div class="vital"><div class="k">Humidity</div><div class="v" id="hum">--%</div></div>
         <div class="vital"><div class="k">Rain</div><div class="v" id="pop">--%</div></div>
-        <div class="vital"><div class="k">Air Quality</div><div class="v" id="aqi">--</div></div>
+        <div class="vital"><div class="k">AQI</div><div class="v" id="aqi">--</div></div>
         <div class="vital"><div class="k">UV Index</div><div class="v" id="uv">--</div></div>
         <div class="vital"><div class="k">Visibility</div><div class="v" id="vis">--</div></div>
         <div class="vital"><div class="k">Gusts</div><div class="v" id="gust">--</div></div>
@@ -367,11 +373,11 @@
   // ---------- helpers ----------
   const cT = v => unitF ? Math.round(v*9/5+32) : Math.round(v);
   const cW = v => unitF ? Math.round(v/1.609)+" mph" : Math.round(v)+" km/h";
-  // compass arrow pointing the way the wind blows TO (met direction is where it comes FROM)
+  // compass arrow pointing the way the wind blows TO (met direction is where it comes FROM).
+  // Uses a rotated text-presentation glyph — plain arrow chars render as blue emoji on iOS.
   const windArrow = deg => {
     if(deg==null) return '';
-    const arrows=['↓','↙','←','↖','↑','↗','→','↘'];
-    return '<span style="opacity:.7">'+arrows[Math.round(deg/45)%8]+'</span>';
+    return '<span style="display:inline-block;transform:rotate('+((deg+180)%360)+'deg);font-size:11px;opacity:.75;vertical-align:1px">&#9650;&#xFE0E;</span>';
   };
   // US AQI → short qualitative band, coloured
   const aqiText = v => {
@@ -392,8 +398,10 @@
   function setStatus(msg, err){ statusEl.textContent = msg||""; statusEl.classList.toggle('err', !!err); }
 
   function clearParticles(){ clearInterval(particleTimer); particleTimer=null; sky.innerHTML=''; }
+  const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function startParticles(kind, heavy){
     clearParticles();
+    if(reducedMotion) return;
     particleTimer = setInterval(()=>{
       const el = document.createElement(kind==='rain'?'div':'span');
       el.className = kind==='rain'?'drop':'flake';
@@ -459,6 +467,7 @@
     if(tc) tc.setAttribute('content', isNight ? '#272a33' : tw[1]);
 
     $('place').textContent = loc.name;
+    document.title = cT(cur.temperature_2m)+'\u00b0 '+loc.name+' \u2014 The Stone';
     // observed time shown in the LOCATION's local timezone (cur.time is already local when timezone=auto)
     let obs;
     try{ obs = new Date(cur.time).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
@@ -482,8 +491,10 @@
     $('set').textContent = daily.sunset ? tfmt(daily.sunset[0]) : '--';
     $('pres').textContent = cur.pressure_msl ? Math.round(cur.pressure_msl) : '--';
 
-    // hourly: next 24 from now
-    const nowIdx = hourly.time.findIndex(t => new Date(t) >= new Date());
+    // hourly: next 24 from the LOCATION's current time (cur.time is location-local)
+    const nowLoc = cur.time ? new Date(cur.time) : new Date();
+    let nowIdx = hourly.time.findIndex(t => new Date(t) >= nowLoc);
+    if(nowIdx === -1) nowIdx = 0;
     const start = Math.max(0, nowIdx-1);
     let hh = '';
     for(let i=start; i<Math.min(start+24, hourly.time.length); i++){
@@ -519,7 +530,10 @@
   }
 
   // ---------- data ----------
+  let fetching = false;
   async function fetchWeather(){
+    if(fetching) return;
+    fetching = true;
     skeleton(true); setStatus('Consulting the stone…');
     try{
       const u = new URL('https://api.open-meteo.com/v1/forecast');
@@ -545,6 +559,8 @@
     }catch(e){
       skeleton(false);
       setStatus('The stone is unreachable — tap here to retry.', true);
+    }finally{
+      fetching = false;
     }
   }
 
@@ -577,6 +593,12 @@
     },300);
   });
   document.addEventListener('click', e=>{ if(!e.target.closest('.bar')) results.classList.remove('open'); });
+  q.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
+      const first = results.querySelector('button');
+      if(first) first.click();
+    } else if(e.key==='Escape'){ results.classList.remove('open'); q.blur(); }
+  });
 
   // ---------- geolocation ----------
   function saveLoc(){ try{ localStorage.setItem('stone.loc', JSON.stringify(loc)); }catch(e){} }
@@ -617,13 +639,16 @@
   // default to °F for US locales
   try{ if(/(US|LR|MM)/.test(Intl.DateTimeFormat().resolvedOptions().locale.split('-')[1]||'')){ unitF=true; unitBtn.textContent='°F'; } }catch(e){}
 
-  // share the stone's verdict
+  // share the stone's verdict — the link carries the location so the recipient opens the same city
   $('share').addEventListener('click', async ()=>{
     if(!lastData) return;
     const [label,emoji,verdict] = codeInfo(lastData.current.weather_code);
     const t = cT(lastData.current.temperature_2m);
-    const txt = emoji+' '+loc.name+': '+t+'°'+(unitF?'F':'C')+', '+label+'. '+verdict+'\n— per The Stone 🪨';
-    const url = location.origin+location.pathname;
+    const hi = cT(lastData.daily.temperature_2m_max[0]), lo = cT(lastData.daily.temperature_2m_min[0]);
+    const txt = emoji+' '+loc.name+': '+t+'°'+(unitF?'F':'C')+' (H '+hi+'° / L '+lo+'°), '+label+'. '+verdict+'\n— per The Stone 🪨';
+    const p = new URLSearchParams({lat:(+loc.lat).toFixed(4), lon:(+loc.lon).toFixed(4), name:loc.name});
+    if(loc.admin) p.set('admin', loc.admin);
+    const url = location.origin+location.pathname+'?'+p.toString();
     try{
       if(navigator.share){ await navigator.share({title:'The Stone says…', text:txt, url}); }
       else { await navigator.clipboard.writeText(txt+' '+url); const b=$('share'); b.textContent='✓ COPIED — GO PASTE IT'; b.classList.add('done'); setTimeout(()=>{b.textContent="◔ SHARE THE STONE'S VERDICT";b.classList.remove('done');},2200); }
@@ -643,23 +668,37 @@
   hang.setAttribute('role','button');
   hang.setAttribute('aria-label','Tap the stone to refresh');
   hang.setAttribute('tabindex','0');
+  hang.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); hang.click(); } });
 
   // ---------- boot ----------
+  // 0) a shared link with ?lat&lon&name shows that city (without clobbering the user's saved home)
+  let fromLink = false;
+  try{
+    const qp = new URLSearchParams(location.search);
+    if(qp.has('lat') && qp.has('lon')){
+      const la=parseFloat(qp.get('lat')), lo2=parseFloat(qp.get('lon'));
+      if(isFinite(la) && isFinite(lo2)){
+        loc = {lat:la, lon:lo2, name:qp.get('name')||'Shared spot', admin:qp.get('admin')||''};
+        fromLink = true;
+      }
+    }
+  }catch(e){}
+
   // 1) restore last-used location if we have one
   let hadSaved = false;
   try{
     const saved = JSON.parse(localStorage.getItem('stone.loc')||'null');
-    if(saved && typeof saved.lat==='number'){ loc = saved; hadSaved = true; }
+    if(saved && typeof saved.lat==='number'){ if(!fromLink) loc = saved; hadSaved = true; }
     const su = localStorage.getItem('stone.unit');
     if(su==='F'){ unitF=true; unitBtn.textContent='°F'; }
     if(su==='C'){ unitF=false; unitBtn.textContent='°C'; }
   }catch(e){}
 
   fetchWeather();
-  // 2) first-ever visit: try to grab real location right away (silent — no error if denied)
-  if(!hadSaved) locateMe(true);
+  // 2) first-ever visit (and not opening a shared link): grab real location silently
+  if(!hadSaved && !fromLink) locateMe(true);
   // 2b) returning user whose saved spot is still the generic label: resolve its real name once
-  else if(loc.name === 'My location' && typeof loc.lat === 'number'){
+  else if(!fromLink && loc.name === 'My location' && typeof loc.lat === 'number'){
     reverseName(loc.lat, loc.lon).then(nm=>{
       if(nm.name && nm.name !== 'My location'){
         loc.name = nm.name; loc.admin = nm.admin; saveLoc();
@@ -670,6 +709,7 @@
 
   refreshTimer = setInterval(()=>{ if(document.visibilityState==='visible') fetchWeather(); }, 15*60*1000);
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible' && lastData) fetchWeather(); });
+  window.addEventListener('online', ()=> fetchWeather());
 })();
 </script>
 
