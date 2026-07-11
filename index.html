@@ -944,5 +944,28 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+
+<!-- ── Visitor identification: FingerprintJS (free open-source tier) ───────────
+     Generates a stable, privacy-respecting browser identifier entirely client-
+     side. No account or API key required — this is the basic/free OSS library.
+     To upgrade to Fingerprint Pro (higher accuracy, bot/VPN/incognito signals),
+     swap the import below for the Pro agent with your public API key per
+     https://dev.fingerprint.com — everything downstream stays the same.
+     Best-effort only: it must never break the weather app if it fails/offline. -->
+<script type="module">
+  import FingerprintJS from 'https://openfpcdn.io/fingerprintjs/v4';
+  (async () => {
+    try {
+      const fp = await FingerprintJS.load();
+      const { visitorId } = await fp.get();
+      window.stoneVisitorId = visitorId;
+      try { localStorage.setItem('stone.visitorId', visitorId); } catch (e) {}
+      document.dispatchEvent(new CustomEvent('stone:visitor', { detail: { visitorId } }));
+      console.info('[stone] visitorId:', visitorId);
+    } catch (e) {
+      console.warn('[stone] fingerprint unavailable:', e);
+    }
+  })();
+</script>
 </body>
 </html>
