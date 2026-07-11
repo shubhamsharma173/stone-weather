@@ -1,5 +1,5 @@
 // Bump this string on every deploy to force clients onto fresh code.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const SHELL_CACHE = 'stone-shell-' + VERSION;
 const DATA_CACHE  = 'stone-data-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
@@ -23,8 +23,8 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Weather + geocoding: network first, fall back to last cached response (offline).
-  if (url.hostname.endsWith('open-meteo.com')) {
+  // Weather + geocoding + alerts: network first, fall back to last cached response (offline).
+  if (url.hostname.endsWith('open-meteo.com') || url.hostname === 'api.weather.gov' || url.hostname === 'api.bigdatacloud.net') {
     e.respondWith(
       fetch(req).then(res => {
         const copy = res.clone();
