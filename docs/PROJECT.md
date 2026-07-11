@@ -372,6 +372,23 @@ and easy to reintroduce.
    and `role="button"`/`aria-label`/`tabindex` to `#stoneTap` (the stone
    only), leaving `#hang` purely as the animation/wobble container.
 
+ 9. **Severe-weather alert bugs (three, all fixed 2026-07-11).**
+    (a) *Stale alert across cities:* `fetchAlerts` hid the banner then
+    `await`ed; a slow response from a previously-selected city could
+    resolve after a new city loaded and repaint the old alert (e.g. a US
+    Extreme Heat Warning appearing on Bengaluru). Fixed with a
+    monotonically-increasing `alertReqId` — each request tags itself and
+    bails if a newer request has started before it resolves.
+    (b) *Empty red bar:* the banner used the HTML `hidden` attribute, but
+    `.alert { display:block }` overrides `hidden` (a known CSS gotcha), so
+    it showed as an empty red bar. Fixed by hiding via a
+    `.hidden{display:none !important}` class instead of the attribute.
+    (c) *Tap-to-expand did nothing:* it toggled a line-clamp, but when the
+    headline and description were the same short string there was nothing
+    more to reveal. Fixed by storing full vs. short text and swapping them
+    on tap, and only showing the "tap to expand" affordance when there is
+    genuinely more to show.
+
 **Open / not yet addressed:**
 
 - **No European AQI scale** — only US AQI (`us_aqi`) is fetched.

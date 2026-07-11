@@ -184,11 +184,12 @@
     box-shadow:0 3px 8px rgba(0,0,0,.25);
     font-family:'Libre Franklin',sans-serif;
   }
+  .alert.hidden{display:none !important}
+  .alert:not(.expandable){cursor:default}
   .alert:focus-visible{outline:2px solid var(--sign-black);outline-offset:2px}
   .alert .atitle{font-family:'Oswald',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
-  .alert .adesc{font-size:12.5px;opacity:.92;margin-top:3px;line-height:1.35;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .alert.open .adesc{-webkit-line-clamp:unset;overflow:visible}
+  .alert .adesc{font-size:12.5px;opacity:.92;margin-top:3px;line-height:1.35}
+  .alert:not(.open) .adesc{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .alert .amore{font-size:11px;opacity:.8;margin-top:4px;font-family:'Oswald',sans-serif;letter-spacing:.1em;text-transform:uppercase}
 
   /* ---------- rig + stone ---------- */
@@ -377,7 +378,7 @@
 
   <div class="cities" id="cities" aria-label="Saved places"></div>
 
-  <button class="alert" id="alert" hidden></button>
+  <button class="alert hidden" id="alert"></button>
 
   <div class="rig" aria-hidden="true">
     <div class="bracket"><div class="arm l"></div><div class="arm r"></div><div class="arm h"></div></div>
@@ -655,27 +656,48 @@
   // ---------- severe weather alerts (US National Weather Service — free, keyless, CORS) ----------
   const alertBtn = $('alert');
   const SEV_RANK = {Extreme:4, Severe:3, Moderate:2, Minor:1, Unknown:0};
+  let alertReqId = 0;          // increments each request; stale responses are ignored
+  function hideAlert(){ alertBtn.classList.add('hidden'); alertBtn.classList.remove('open'); alertBtn.innerHTML=''; }
+
   async function fetchAlerts(lat, lon){
-    alertBtn.hidden = true; alertBtn.classList.remove('open');
+    const myId = ++alertReqId;   // tag this request
+    hideAlert();                 // clear whatever the previous city showed
     try{
       const r = await fetch('https://api.weather.gov/alerts/active?point='+lat.toFixed(4)+','+lon.toFixed(4),
         { headers:{ 'Accept':'application/geo+json' } });
-      if(!r.ok) return; // NWS only covers the US; elsewhere it 4xxs — silently no-op
+      if(myId !== alertReqId) return;         // a newer city was selected — drop this result
+      if(!r.ok) return;                        // NWS is US-only; elsewhere it 4xxs — stay hidden
       const j = await r.json();
+      if(myId !== alertReqId) return;          // re-check after the second await
       const feats = (j.features||[]).map(f=>f.properties).filter(Boolean);
-      if(!feats.length) return;
+      if(!feats.length) return;                // no active alerts — stay hidden
       feats.sort((a,b)=>(SEV_RANK[b.severity]||0)-(SEV_RANK[a.severity]||0));
       const a = feats[0];
+      const full = a.description || a.headline || '';
+      const short = a.headline || a.description || '';
       const extra = feats.length>1 ? ' · +'+(feats.length-1)+' more' : '';
+      // only offer "tap to expand" when there's genuinely more text to reveal
+      const expandable = (full && full !== short) || full.length > 140 || feats.length > 1;
+      alertBtn.dataset.full = full;
+      alertBtn.dataset.short = short;
       alertBtn.innerHTML =
-        '<div class="atitle">⚠ '+(a.event||'Weather Alert')+'</div>'+
-        '<div class="adesc">'+escapeHtml(a.headline || a.description || '')+'</div>'+
-        '<div class="amore">'+(a.severity||'')+extra+' · tap to expand</div>';
-      alertBtn.hidden = false;
-    }catch(e){ /* offline or blocked — no alert shown */ }
+        '<div class="atitle">⚠ '+escapeHtml(a.event||'Weather Alert')+'</div>'+
+        '<div class="adesc">'+escapeHtml(short)+'</div>'+
+        '<div class="amore">'+escapeHtml((a.severity||'')+extra)+(expandable?' · tap to expand':'')+'</div>';
+      alertBtn.classList.toggle('expandable', expandable);
+      alertBtn.classList.remove('hidden');
+    }catch(e){ if(myId === alertReqId) hideAlert(); }
   }
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-  alertBtn.addEventListener('click', ()=> alertBtn.classList.toggle('open'));
+
+  alertBtn.addEventListener('click', ()=>{
+    if(!alertBtn.classList.contains('expandable')) return;   // nothing more to show
+    const open = alertBtn.classList.toggle('open');
+    const desc = alertBtn.querySelector('.adesc');
+    if(desc) desc.textContent = open ? (alertBtn.dataset.full||'') : (alertBtn.dataset.short||'');
+    const more = alertBtn.querySelector('.amore');
+    if(more) more.textContent = more.textContent.replace(open?'tap to expand':'tap to collapse', open?'tap to collapse':'tap to expand');
+  });
 
   // ---------- data ----------
   let fetching = false;

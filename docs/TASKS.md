@@ -74,6 +74,11 @@ _(none)_
 
 ## DONE
 
+- **T-000c — Fix severe-weather alert bugs.**
+  Agent: Claude · 2026-07-11 · Stale-response guard (alertReqId); hide via
+  class not the display-overridden `hidden` attr; working tap-to-expand with
+  full/short text swap. SW v9.
+
 - **T-000b — Splash screen, responsive audit, PR template.**
   Agent: Claude · 2026-07-11 · Added launch splash; fixed iPhone-SE horizontal
   overflow (stone repositioned 76%%→72%%, app overflow-x:clip); wide-screen

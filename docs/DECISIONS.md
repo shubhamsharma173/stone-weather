@@ -182,3 +182,22 @@ Template:
   design choice rather than a mobile page stretched onto desktop.
 - **Consequences:** Looks deliberate on large screens without a separate
   desktop layout. Preserves the single-column, one-glance philosophy.
+
+## ADR-014 — Alert requests are guarded against stale responses
+- **Date:** 2026-07-11
+- **By:** Claude
+- **Status:** Accepted
+- **Context:** Async alert fetches for a previous city could resolve after
+  a new city was selected, painting the wrong city's alert (e.g. a US
+  warning on an Indian city). Also, hiding via the `hidden` attribute
+  failed because `.alert{display:block}` overrides it, producing an empty
+  red bar.
+- **Decision:** Tag each alert fetch with an incrementing `alertReqId` and
+  discard any response whose id is no longer current. Hide the banner with
+  a `.hidden{display:none !important}` class rather than the `hidden`
+  attribute. Only offer "tap to expand" when there is more text than the
+  collapsed view shows, swapping stored full/short strings on tap.
+- **Consequences:** Alerts are always correct for the displayed city, never
+  a stale one; no empty bar; expand actually works. This request-id pattern
+  should be applied to any future per-location async that can be superseded
+  by a fast city switch.
