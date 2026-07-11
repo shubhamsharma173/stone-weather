@@ -201,3 +201,24 @@ Template:
   a stale one; no empty bar; expand actually works. This request-id pattern
   should be applied to any future per-location async that can be superseded
   by a fast city switch.
+
+## ADR-015 — Base background color lives on <html>, set by JS
+- **Date:** 2026-07-11
+- **By:** Claude
+- **Status:** Accepted; supersedes the background approach in ADR (implicit) earlier builds
+- **Context:** iOS Safari repeatedly showed cream/slate banding at the top
+  and bottom of the page. Root cause finally identified: Safari paints the
+  `<html>` background in the overscroll/rubber-band zones and behind the
+  collapsing toolbar, BEHIND any `position:fixed` layer. Prior fixes put the
+  base color on a fixed `.bg` layer or on `<html>` via `var(--wall)`, which
+  fails because `body.night`'s variable override does not inherit up to
+  `<html>`.
+- **Decision:** Put the day/night base color on `<html>` as an explicit
+  literal color, updated by JS on every render. Make `<body>` and the `.bg`
+  gradient layer fully transparent. No lighter surface remains for Safari to
+  expose.
+- **Consequences:** Correct edge-to-edge background in Safari's overscroll
+  zones. Constraint for future agents: never move the base color onto
+  `<body>` or a fixed layer, and never rely on `var(--wall)` for `<html>`.
+  Caveat: verified only in headless Chromium in the dev environment; real
+  WebKit/iOS verification is owner-side (WebKit could not be installed).

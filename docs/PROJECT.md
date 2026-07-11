@@ -316,17 +316,23 @@ and easy to reintroduce.
 
 **Fixed, but fragile — watch for regressions:**
 
-1. **iOS background seam / light band at scroll edges.** Root cause:
-   `background-attachment: fixed` doesn't render correctly on iOS
-   Safari, and separately, the `<html>` element's own background can
-   show through during rubber-band overscroll independent of `<body>`.
-   Fix: a dedicated `.bg` fixed-position layer at `z-index:-2` sized to
-   `100lvh` (not `100vh`, to cover the Safari toolbar-collapse gap),
-   plus explicit `<html>` background sync both in CSS
-   (`html:has(body.night)`) and via JS on every render. **If a light
-   band reappears, check both the `.bg` element's height and whether
-   `document.documentElement.style.backgroundColor` is still being set
-   in `render()`.**
+1. **iOS Safari background banding at top/bottom edges (repeatedly
+   mis-diagnosed; correct fix 2026-07-11).** iOS Safari paints the
+   `<html>` element's background in the overscroll/rubber-band zones and
+   behind the collapsing toolbar — and it does this BEHIND any
+   `position:fixed` layer. Earlier attempts put the base color on a fixed
+   `.bg` layer and/or on `<html>` via `var(--wall)`; the latter failed
+   because a CSS variable set on `body.night` does NOT inherit upward to
+   `<html>`, so `<html>` stayed light at night → cream bands. **Correct
+   approach:** the day/night base color lives on `<html>` as an explicit
+   literal color, set by JS every render
+   (`document.documentElement.style.backgroundColor`); `<body>` and the
+   `.bg` gradient layer are fully transparent, so no lighter surface
+   exists for Safari to reveal. **Do not put the base background color on
+   `<body>` or on a fixed layer, and do not rely on `var(--wall)` for the
+   `<html>` background.** NOTE: this could only be verified in headless
+   Chromium in the dev environment (WebKit was not installable); real
+   iOS Safari verification is still owner-side.
 2. **Observed time showing the device's clock instead of the viewed
    location's local time.** This made day/night theming look broken
    (dark UI at "10:42 AM"). Fixed by deriving the displayed time from

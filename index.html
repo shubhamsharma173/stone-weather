@@ -26,29 +26,29 @@
     --muted:#7a7568; --line:#d8d2c2;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  html{background:var(--wall)}
-  /* CSS-level night sync for html (JS also sets it inline as a fallback for older Safari) */
-  html:has(body.night){background:#272a33}
+  /* iOS Safari reveals the <html> background in overscroll/rubber-band zones,
+     BEHIND any position:fixed layer. So the day/night base color must live on
+     <html> itself; JS keeps it in sync every render (setRootBg). We avoid :has()
+     and putting the base color on a fixed layer — neither covers the overscroll gap. */
+  html{background-color:#e8dfcb;}
   html,body{height:100%}
   body{
     font-family:'Libre Franklin',system-ui,sans-serif;color:var(--ink);
-    background-color:var(--wall);
+    background-color:transparent;
     min-height:100dvh;display:flex;justify-content:center;overflow-x:hidden;
   }
   /* Fixed background layer — iOS-safe alternative to background-attachment:fixed.
      min-height:100lvh covers the gap iOS exposes when the Safari toolbar collapses. */
   .bg{
-    position:fixed;left:0;right:0;top:0;height:100vh;min-height:100lvh;z-index:-2;transition:background 1s;
+    position:fixed;left:0;right:0;top:0;bottom:0;z-index:-2;transition:background 1s;
     background:
       radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.30), transparent 60%),
-      radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.10), transparent 55%),
-      var(--wall);
+      radial-gradient(100% 100% at 90% 100%, rgba(0,0,0,.10), transparent 55%);
   }
   body.night .bg{
     background:
       radial-gradient(120% 90% at 20% 0%, rgba(255,255,255,.05), transparent 60%),
-      radial-gradient(120% 100% at 90% 100%, rgba(0,0,0,.28), transparent 55%),
-      var(--wall);
+      radial-gradient(120% 100% at 90% 100%, rgba(0,0,0,.28), transparent 55%);
   }
   body.night{
     --wall:#272a33; --sign-white:#efece2; --ink:#e9e6db; --muted:#a7a294; --line:#4a4d58;
@@ -160,7 +160,7 @@
   .results .sub{color:var(--muted);font-size:12.5px}
 
   /* ---------- saved cities ---------- */
-  .cities{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 2px 2px;position:relative;z-index:4}
+  .cities{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:12px 2px 4px;position:relative;z-index:4}
   .cities::-webkit-scrollbar{display:none}
   .chip{
     all:unset;cursor:pointer;flex:0 0 auto;font-family:'Oswald',sans-serif;font-weight:500;
@@ -286,10 +286,11 @@
   .hilo{font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:.08em;color:var(--muted);margin-top:5px;white-space:nowrap}
   .hilo b{color:var(--ink);font-weight:700}
 
-  .vitals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;margin-top:16px;padding-top:14px;border-top:1.5px solid var(--line)}
-  .vital{text-align:center;display:flex;flex-direction:column;justify-content:flex-end}
-  .vital .k{font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
-  .vital .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;margin-top:2px;white-space:nowrap}
+  .vitals{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px;margin-top:16px;padding-top:15px;border-top:1.5px solid var(--line)}
+  .vital{text-align:center;display:flex;flex-direction:column}
+  .vital .k{font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;
+    min-height:26px;display:flex;align-items:center;justify-content:center;line-height:1.15}
+  .vital .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;margin-top:3px;white-space:nowrap}
 
   /* ---------- hourly plank ---------- */
   .plank{margin-top:18px;background:var(--sign-white);border-radius:3px;padding:14px 0 12px;
@@ -333,11 +334,11 @@
 
   /* ---------- states & footer ---------- */
   .status{
-    margin-top:16px;text-align:center;font-family:'Oswald',sans-serif;font-size:14px;
+    margin-top:18px;text-align:center;font-family:'Oswald',sans-serif;font-size:14px;
     letter-spacing:.1em;color:var(--muted);text-transform:uppercase;min-height:20px;
   }
   .status.err{color:var(--accent)}
-  .footer{text-align:center;margin-top:16px;font-size:11px;color:var(--muted);letter-spacing:.04em}
+  .footer{text-align:center;margin-top:22px;font-size:11px;color:var(--muted);letter-spacing:.04em;opacity:.85}
   .footer a{color:inherit}
   .hidden{display:none !important}
 

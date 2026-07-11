@@ -74,6 +74,12 @@ _(none)_
 
 ## DONE
 
+- **T-000d — Real iOS Safari background fix + vertical rhythm.**
+  Agent: Claude · 2026-07-11 · Moved base bg color onto <html> (Safari paints
+  it in overscroll zones behind fixed layers); body/.bg transparent. Normalized
+  section spacing; aligned vitals values across rows via fixed label height. SW v10.
+  NOTE: verified in headless Chromium only; WebKit uninstallable in env.
+
 - **T-000c — Fix severe-weather alert bugs.**
   Agent: Claude · 2026-07-11 · Stale-response guard (alertReqId); hide via
   class not the display-overridden `hidden` attr; working tap-to-expand with
