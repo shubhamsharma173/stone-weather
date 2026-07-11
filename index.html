@@ -185,7 +185,7 @@
   .vitals{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;margin-top:16px;padding-top:14px;border-top:1.5px solid var(--line)}
   .vital{text-align:center}
   .vital .k{font-size:10.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
-  .vital .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:17px;margin-top:2px}
+  .vital .v{font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;margin-top:2px;white-space:nowrap}
 
   /* ---------- hourly plank ---------- */
   .plank{margin-top:18px;background:var(--sign-white);border-radius:3px;padding:14px 0 12px;
@@ -291,10 +291,14 @@
         <div class="vital"><div class="k">Wind</div><div class="v" id="wind">--</div></div>
         <div class="vital"><div class="k">Humidity</div><div class="v" id="hum">--%</div></div>
         <div class="vital"><div class="k">Rain</div><div class="v" id="pop">--%</div></div>
+        <div class="vital"><div class="k">Air Quality</div><div class="v" id="aqi">--</div></div>
         <div class="vital"><div class="k">UV Index</div><div class="v" id="uv">--</div></div>
+        <div class="vital"><div class="k">Visibility</div><div class="v" id="vis">--</div></div>
+        <div class="vital"><div class="k">Gusts</div><div class="v" id="gust">--</div></div>
+        <div class="vital"><div class="k">Dew Point</div><div class="v" id="dew">--°</div></div>
+        <div class="vital"><div class="k">Pressure</div><div class="v" id="pres">--</div></div>
         <div class="vital"><div class="k">Sunrise</div><div class="v" id="rise">--</div></div>
         <div class="vital"><div class="k">Sunset</div><div class="v" id="set">--</div></div>
-        <div class="vital"><div class="k">Pressure</div><div class="v" id="pres">--</div></div>
       </div>
       <button class="share" id="share">◔ SHARE THE STONE'S VERDICT</button>
     </div>
@@ -306,7 +310,7 @@
   </section>
 
   <section class="week" id="weekWrap" aria-label="7 day forecast">
-    <h2>The week, per the stone</h2>
+    <h2>The next 10 days, per the stone</h2>
     <div id="days"></div>
   </section>
 
@@ -363,6 +367,25 @@
   // ---------- helpers ----------
   const cT = v => unitF ? Math.round(v*9/5+32) : Math.round(v);
   const cW = v => unitF ? Math.round(v/1.609)+" mph" : Math.round(v)+" km/h";
+  // compass arrow pointing the way the wind blows TO (met direction is where it comes FROM)
+  const windArrow = deg => {
+    if(deg==null) return '';
+    const arrows=['↓','↙','←','↖','↑','↗','→','↘'];
+    return '<span style="opacity:.7">'+arrows[Math.round(deg/45)%8]+'</span>';
+  };
+  // US AQI → short qualitative band, coloured
+  const aqiText = v => {
+    if(v==null) return '--';
+    let label,col;
+    if(v<=50){label='Good';col='#3f9c4f';}
+    else if(v<=100){label='Moderate';col='#c9a227';}
+    else if(v<=150){label='Unhealthy·SG';col='#d97a2b';}
+    else if(v<=200){label='Unhealthy';col='#c0392b';}
+    else if(v<=300){label='Very Bad';col='#8e44ad';}
+    else {label='Hazardous';col='#7d1a1a';}
+    return Math.round(v)+' <span style="color:'+col+';font-size:11px;font-weight:700">'+label+'</span>';
+  };
+  const visText = m => unitF ? (m/1609).toFixed(m<16093?1:0)+' mi' : (m/1000).toFixed(m<10000?1:0)+' km';
   const dayName = iso => new Date(iso+"T12:00").toLocaleDateString(undefined,{weekday:'short'});
   const hourLabel = iso => new Date(iso).toLocaleTimeString(undefined,{hour:'numeric'});
 
@@ -407,7 +430,7 @@
 
   // ---------- render ----------
   function skeleton(on){
-    ['temp','cond','feels','wind','hum','pop','hilo','uv','rise','set','pres'].forEach(id=>$(id).classList.toggle('skel',on));
+    ['temp','cond','feels','wind','hum','pop','hilo','uv','rise','set','pres','aqi','vis','gust','dew'].forEach(id=>$(id).classList.toggle('skel',on));
   }
 
   function render(d){
@@ -415,7 +438,10 @@
     const cur = d.current, daily = d.daily, hourly = d.hourly;
     const [label, emoji, verdict, kind] = codeInfo(cur.weather_code);
 
-    document.body.classList.toggle('night', cur.is_day===0);
+    const isNight = cur.is_day===0;
+    document.body.classList.toggle('night', isNight);
+    // keep the root/html background in sync so iOS overscroll & safe areas don't flash the light wall
+    document.documentElement.style.backgroundColor = isNight ? '#272a33' : '#e8dfcb';
 
     // subtle weather wash + matching phone status-bar colour
     const TINT = {
@@ -430,20 +456,27 @@
     const tint = $('tint');
     tint.style.background = tw[0]; tint.classList.add('on');
     const tc = document.querySelector('meta[name=theme-color]');
-    if(tc) tc.setAttribute('content', cur.is_day===0 ? '#272a33' : tw[1]);
+    if(tc) tc.setAttribute('content', isNight ? '#272a33' : tw[1]);
 
     $('place').textContent = loc.name;
-    $('stamp').textContent = (loc.admin?loc.admin+" · ":"") + "OBSERVED " +
-      new Date().toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    // observed time shown in the LOCATION's local timezone (cur.time is already local when timezone=auto)
+    let obs;
+    try{ obs = new Date(cur.time).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+    catch(e){ obs = new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+    $('stamp').textContent = (loc.admin?loc.admin+" · ":"") + "LOCAL TIME " + obs;
     $('temp').innerHTML = cT(cur.temperature_2m)+'<small>°'+(unitF?'F':'C')+'</small>';
     $('cond').textContent = label;
     $('stoneword').textContent = '"'+verdict+'"';
     $('hilo').innerHTML = 'H <b>'+cT(daily.temperature_2m_max[0])+'°</b> &nbsp;L <b>'+cT(daily.temperature_2m_min[0])+'°</b>';
     $('feels').textContent = cT(cur.apparent_temperature)+'°';
-    $('wind').textContent = cW(cur.wind_speed_10m);
+    $('wind').innerHTML = windArrow(cur.wind_direction_10m) + ' ' + cW(cur.wind_speed_10m);
     $('hum').textContent = Math.round(cur.relative_humidity_2m)+'%';
     $('pop').textContent = (daily.precipitation_probability_max[0] ?? 0)+'%';
     $('uv').textContent = daily.uv_index_max ? Math.round(daily.uv_index_max[0]) : '--';
+    $('aqi').innerHTML = aqiText(d._aqi);
+    $('vis').textContent = (cur.visibility!=null) ? visText(cur.visibility) : '--';
+    $('gust').textContent = (cur.wind_gusts_10m!=null) ? cW(cur.wind_gusts_10m) : '--';
+    $('dew').textContent = (cur.dew_point_2m!=null) ? cT(cur.dew_point_2m)+'°' : '--';
     const tfmt = iso => new Date(iso).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}).replace(' ','');
     $('rise').textContent = daily.sunrise ? tfmt(daily.sunrise[0]) : '--';
     $('set').textContent = daily.sunset ? tfmt(daily.sunset[0]) : '--';
@@ -492,14 +525,23 @@
       const u = new URL('https://api.open-meteo.com/v1/forecast');
       u.search = new URLSearchParams({
         latitude:loc.lat, longitude:loc.lon, timezone:'auto',
-        current:'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day,pressure_msl',
+        current:'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,is_day,pressure_msl,visibility,dew_point_2m',
         hourly:'temperature_2m,weather_code,precipitation_probability',
         daily:'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset',
-        forecast_days:7
+        forecast_days:10
       });
-      const r = await fetch(u);
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      render(await r.json());
+      // air quality is a separate free Open-Meteo endpoint (no key)
+      const aq = new URL('https://air-quality-api.open-meteo.com/v1/air-quality');
+      aq.search = new URLSearchParams({ latitude:loc.lat, longitude:loc.lon, current:'us_aqi', timezone:'auto' });
+
+      const [wRes, aqRes] = await Promise.allSettled([ fetch(u), fetch(aq) ]);
+      if(wRes.status!=='fulfilled' || !wRes.value.ok) throw new Error('weather');
+      const data = await wRes.value.json();
+      data._aqi = null;
+      if(aqRes.status==='fulfilled' && aqRes.value.ok){
+        try{ const aj = await aqRes.value.json(); data._aqi = aj.current ? aj.current.us_aqi : null; }catch(e){}
+      }
+      render(data);
     }catch(e){
       skeleton(false);
       setStatus('The stone is unreachable — tap here to retry.', true);
