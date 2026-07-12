@@ -241,3 +241,21 @@ Template:
   still conveyed by the stone, theme-color, and day/night). RULE: never
   reintroduce a persistent full-screen position:fixed background layer.
 - **Supersedes:** ADR-015 (fixed-layer parts).
+
+## ADR-017 — Custom domain: honestrock.fun
+- **Date:** 2026-07-11
+- **By:** project owner (domain purchase) + Claude (integration)
+- **Status:** Accepted
+- **Context:** The app was live only at the default
+  `shubhamsharma173.github.io/stone-weather/` GitHub Pages URL. The owner
+  purchased a short, on-brand `.fun` domain that plays on the app's
+  "honest weather app" tagline.
+- **Decision:** Point `honestrock.fun` at GitHub Pages via a `CNAME` file
+  at the repo root plus DNS records at the registrar. Add `og:url` for
+  correct link-preview canonicalization. No app logic changed — share
+  links already build URLs from `location.origin`, so they automatically
+  use whichever domain the app is loaded from.
+- **Consequences:** Shorter, more memorable, on-brand URL for sharing.
+  Constraint for future agents: never delete the `CNAME` file — doing so
+  silently reverts Pages to the default subdomain and breaks the custom
+  domain until it's restored.

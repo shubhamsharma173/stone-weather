@@ -3,7 +3,7 @@
 Weather forecasting the way it was meant to be: a rock on a rope. Now with
 satellite data.
 
-**Live:** https://shubhamsharma173.github.io/stone-weather/
+**Live:** https://honestrock.fun/
 
 Inspired by the classic "Weather Forecasting Stone" sign — *stone is wet:
 rain; stone is gone: tornado* — this is a real, fully functional weather app

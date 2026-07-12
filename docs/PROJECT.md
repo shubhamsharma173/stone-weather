@@ -1,7 +1,7 @@
 # The Stone — Knowledge Transfer Document
 
 **Repo:** https://github.com/shubhamsharma173/stone-weather
-**Live:** https://shubhamsharma173.github.io/stone-weather/
+**Live:** https://honestrock.fun/
 **Last updated:** July 11, 2026 (commit `bc1a8e1`)
 **Format:** Single-page vanilla HTML/CSS/JS PWA. No build step, no framework, no backend.
 

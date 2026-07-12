@@ -74,6 +74,11 @@ _(none)_
 
 ## DONE
 
+- **T-000f — Point custom domain honestrock.fun at the app.**
+  Agent: Claude · 2026-07-11 · Added CNAME file at repo root; updated og:url,
+  README, AGENTS.md, PROJECT.md live-URL references. Share links already used
+  location.origin so no code change needed there. SW v12.
+
 - **T-000e — iOS Safari background glitch: real fix.**
   Agent: Claude · 2026-07-11 · Root cause = 6 stacked position:fixed layers Safari
   couldn't composite mid-scroll. Moved all persistent background onto <html>;

@@ -199,7 +199,17 @@ unverified or open, (5) which docs you updated.
 - **Hosting:** GitHub Pages, served from `main` at the repo root. A push to
   `main` auto-deploys within a minute or two. There is no CI pipeline and
   no build; what's in the repo root is what ships.
-- **Live URL:** https://shubhamsharma173.github.io/stone-weather/
+- **Custom domain:** `honestrock.fun`, pointed at GitHub Pages via a
+  **`CNAME` file at the repo root** (contains just the domain, no
+  `https://`, no trailing content) plus DNS records configured at the
+  registrar (Namecheap) — an `A`/`ALIAS` record to GitHub Pages' IPs (or a
+  `CNAME` record to `shubhamsharma173.github.io`, per GitHub's current
+  Pages custom-domain instructions) and a `www` redirect if desired.
+  **Do not delete or rename the `CNAME` file** — removing it reverts the
+  live site to the default `shubhamsharma173.github.io/stone-weather/`
+  URL and breaks the domain until it's re-added. The old GitHub Pages
+  subdomain still works as a fallback/redirect target.
+- **Live URL:** https://honestrock.fun/
 - **After deploy**, installed PWA clients update on next load because the
   service worker is network-first for app code AND self-reloads once on a
   new version — provided you bumped `VERSION` (HARD RULE 4).
