@@ -208,6 +208,7 @@ All free, all keyless, all called directly from the browser via `fetch`.
 | Open-Meteo Geocoding | `geocoding-api.open-meteo.com/v1/search` | City-name search (forward geocoding) | **Forward only.** Passing lat/lon to this endpoint does not return a name — it will silently return no useful match. |
 | BigDataCloud | `api.bigdatacloud.net/data/reverse-geocode-client` | Coordinates → city name (reverse geocoding) | Used specifically because Open-Meteo can't do this direction. Confirmed to send proper CORS headers. |
 | National Weather Service | `api.weather.gov/alerts/active?point={lat},{lon}` | Severe weather alerts | **US coverage only.** Outside the US it either 404s or returns no features; the code treats both as "no alert," which is correct behavior, not a bug. |
+| Fingerprint Pro | `fpjscdn.net/v3/{PUBLIC_KEY}` | Visitor identification (`window.stoneVisitorId`) | **Exception to the "no paid services" rule — see ADR-018.** Requires a paid/trial Fingerprint account owning the embedded public key. Loaded as a `type="module"` script, wrapped in try/catch; never blocks the app if unreachable. No privacy notice currently exists in-app disclosing this — add one before wider distribution. |
 
 Current API request fields (as of this doc):
 ```
@@ -302,6 +303,8 @@ If a future contributor wants to add a library, weigh it against the
 - Dynamic `<title>` (`"24° New York — The Stone"`) and Open Graph tags
   for link previews
 - Keyboard accessibility on the stone tap target and search dropdown
+- Visitor identification via Fingerprint Pro (`window.stoneVisitorId`, persisted to
+  `localStorage['stone.visitorId']`) — see ADR-018 for the rule exception this required
 - Launch splash screen (stone drops into place), auto-dismissed on first data
   load with a 6s safety timeout; reduced-motion aware
 - Responsive from 375px phones to desktop; on tablet/desktop (≥620px) the

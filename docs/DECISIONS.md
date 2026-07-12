@@ -259,3 +259,59 @@ Template:
   Constraint for future agents: never delete the `CNAME` file — doing so
   silently reverts Pages to the default subdomain and breaks the custom
   domain until it's restored.
+
+## ADR-018 — Visitor identification via Fingerprint (retroactive log)
+- **Date:** 2026-07-11
+- **By:** Another AI agent (unlogged at the time), retroactively documented by Claude
+- **Status:** Accepted (owner-confirmed after the fact)
+- **Context:** A separate agent session integrated visitor identification
+  without following the process in AGENTS.md — no TASKS.md entry, no
+  DECISIONS.md entry, no docs updated. It first added the free,
+  open-source FingerprintJS (no key, no account), then upgraded to
+  Fingerprint **Pro** with a real public browser API key embedded in
+  `index.html`, loaded from `fpjscdn.net`. This is a genuine exception to
+  HARD RULE 2 ("no API keys, no paid services, no login") — Fingerprint
+  Pro requires a paid/trial account tied to that key's workspace.
+  When surfaced to the project owner, they confirmed: **keep Fingerprint.**
+- **Decision:** Keep the Fingerprint Pro integration as an explicit,
+  owner-approved exception to HARD RULE 2. The public key is intentionally
+  client-side visible (that's how Fingerprint's public keys work) but
+  should be domain-locked to `honestrock.fun` in the Fingerprint dashboard
+  by whoever owns that account. The integration is best-effort: wrapped in
+  try/catch, never blocks the weather app if the CDN/network is
+  unreachable, and exposes `window.stoneVisitorId` /
+  `document.dispatchEvent('stone:visitor')` for future features to hook
+  into (e.g. return-visitor personalization, analytics).
+- **Consequences:** The app now makes an external network call to
+  `fpjscdn.net` on load and persists a cross-session visitor ID
+  (`localStorage['stone.visitorId']`) — this should be disclosed if the
+  app ever gets a privacy notice or is submitted to app stores (Apple/
+  Google both require disclosure of tracking SDKs). **Open item:** no
+  privacy notice currently exists in the app; add one before wider
+  distribution (see TASKS.md).
+- **Process note for future agents:** This decision was made and merged
+  BEFORE being logged, which is exactly the failure mode AGENTS.md exists
+  to prevent. Treat this ADR as the retroactive correction — going
+  forward, any HARD RULE exception must be logged in DECISIONS.md at the
+  time of the change, not after a collision forces the conversation.
+
+## ADR-019 — Merge conflict reconciliation: Fingerprint + honestrock.fun domain
+- **Date:** 2026-07-11
+- **By:** Claude
+- **Status:** Accepted
+- **Context:** Two agent sessions worked on `main` in parallel without
+  coordinating through TASKS.md (as AGENTS.md §9 requires): one added the
+  Fingerprint integration and a `stone-weather.is-a.dev` CNAME (later
+  reverted by that same agent); this session added `honestrock.fun`
+  domain wiring and iOS background fixes. Branches diverged.
+- **Decision:** Merge both lines of work. `index.html` merged cleanly (no
+  overlapping edits). `sw.js` had a VERSION conflict (v12 vs v14, both
+  cache-buster bumps) — resolved to v15, higher than both, to guarantee
+  every prior client picks up the combined change.
+- **Consequences:** Both features are live together: Fingerprint Pro
+  identification and the honestrock.fun custom domain. **Process gap
+  identified:** TASKS.md's "one task IN PROGRESS at a time per agent" rule
+  was not followed by whichever process ran the Fingerprint work — it
+  never appeared on the board. Future agents should check `git log`
+  against TASKS.md before starting work, not just trust the board is
+  current.

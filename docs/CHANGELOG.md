@@ -7,6 +7,7 @@ Format: `- YYYY-MM-DD (commit) — description`
 
 ---
 
+- 2026-07-11 (pending) — Reconciled parallel agent work: kept Fingerprint Pro visitor identification, live at the new custom domain honestrock.fun. Retroactively documented both decisions after a merge collision (see DECISIONS.md ADR-018/019).
 - 2026-07-11 (pending) — The app now lives at its own domain, honestrock.fun, via GitHub Pages custom domain support. No functional change.
 - 2026-07-11 (pending) — Fixed the iOS Safari background glitch for real: the whole page background now paints on the <html> root with NO position:fixed layers, eliminating the edge banding that appeared during scroll and vanished on screenshot. Removed the fixed gradient, texture, and weather-tint layers (weather mood still tints the status bar).
 - 2026-07-11 (pending) — Reworked the page background so iOS Safari no longer shows cream/slate banding at the top and bottom during scroll (base color moved onto the <html> element, which Safari paints edge-to-edge including the overscroll zones). Tightened vertical spacing and aligned the vitals grid so values line up across rows.

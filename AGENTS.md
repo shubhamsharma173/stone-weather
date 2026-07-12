@@ -51,9 +51,16 @@ context; this is the enforceable short list.
    The entire app must remain runnable by opening `index.html` directly
    and hostable as static files with zero config. Do not add React, Vue,
    Tailwind, a `package.json`, or anything requiring compilation.
-2. **No API keys, no paid services, no login.** Every data source must be
-   free, keyless, and CORS-enabled from the browser. If a feature seems to
-   require a key, it does not belong here — raise it in TASKS.md instead.
+2. **No API keys, no paid services, no login — by default.** Weather/
+   geocoding/alerts data sources must be free, keyless, and CORS-enabled
+   from the browser. **One standing, owner-approved exception exists:**
+   Fingerprint Pro visitor identification (see ADR-018), which uses a
+   real paid-account API key. Do not add further paid services on top of
+   this without the same explicit owner sign-off and a DECISIONS.md entry
+   made **at the time of the change**, not after the fact. If a new
+   feature seems to require a key, default to raising it in TASKS.md and
+   asking first — the Fingerprint exception was added without that step
+   and caused a real merge collision (ADR-019); don't repeat that.
 3. **App-shell service worker caching stays NETWORK-FIRST.** Never make
    `index.html` / `sw.js` / `manifest.json` cache-first. This caused the
    worst bug in project history (fixes invisible to installed users).

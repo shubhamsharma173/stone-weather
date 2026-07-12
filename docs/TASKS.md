@@ -20,6 +20,11 @@ _(none)_
 
 ## TODO — High priority
 
+- **T-009 — Add an in-app privacy notice disclosing Fingerprint tracking.**
+  Required before wider distribution / any app-store submission (Apple and
+  Google both mandate disclosure of tracking SDKs). See ADR-018.
+
+
 - **T-001 — Commit an automated regression test suite.**
   Development so far used ad hoc Playwright scripts that were never checked
   in. Create a `tests/` directory with reproducible checks covering the
@@ -73,6 +78,11 @@ _(none)_
 ---
 
 ## DONE
+
+- **T-000g — Reconcile parallel-agent work: Fingerprint + honestrock.fun domain.**
+  Agent: Claude · 2026-07-11 · Merged diverged main branches; resolved sw.js
+  VERSION conflict (v15); retroactively logged ADR-018 (Fingerprint) and
+  ADR-019 (merge). Owner confirmed: keep Fingerprint, use honestrock.fun.
 
 - **T-000f — Point custom domain honestrock.fun at the app.**
   Agent: Claude · 2026-07-11 · Added CNAME file at repo root; updated og:url,
